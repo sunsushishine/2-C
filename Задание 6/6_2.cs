@@ -2,12 +2,10 @@ using System;
 
 class Visa
 {
-    // Поля базового класса Visa
-    private string clientName;
-    private string accountNumber;
-    private decimal currentBalance;
+    protected string clientName;
+    protected string accountNumber;
+    protected decimal currentBalance;
 
-    // Конструктор класса Visa
     public Visa(string clientName, string accountNumber, decimal initialBalance)
     {
         this.clientName = clientName;
@@ -15,7 +13,6 @@ class Visa
         this.currentBalance = initialBalance;
     }
 
-    // Метод для создания счета
     public void CreateAccount(string clientName, string accountNumber, decimal initialBalance)
     {
         this.clientName = clientName;
@@ -23,7 +20,6 @@ class Visa
         this.currentBalance = initialBalance;
     }
 
-    // Метод для внесения денег на счет
     public void Deposit(decimal amount)
     {
         if (amount > 0)
@@ -37,8 +33,7 @@ class Visa
         }
     }
 
-    // Метод для снятия денег со счета
-    public void Withdraw(decimal amount)
+    public virtual void Withdraw(decimal amount)
     {
         if (amount > 0 && amount <= currentBalance)
         {
@@ -55,8 +50,7 @@ class Visa
         }
     }
 
-    // Метод для вывода состояния счета
-    public void PrintAccountStatus()
+    public virtual void PrintAccountStatus()
     {
         Console.WriteLine($"Имя клиента: {clientName}");
         Console.WriteLine($"Номер счета: {accountNumber}");
@@ -64,25 +58,74 @@ class Visa
     }
 }
 
+class VisaPlus : Visa
+{
+    private decimal maxOverdraft;
+    private decimal interestRate;
+    private decimal currentOverdraft;
+
+    public VisaPlus(string clientName, string accountNumber, decimal initialBalance, decimal maxOverdraft, decimal interestRate)
+        : base(clientName, accountNumber, initialBalance)
+    {
+        this.maxOverdraft = maxOverdraft;
+        this.interestRate = interestRate;
+        this.currentOverdraft = 0;
+    }
+
+    public override void Withdraw(decimal amount)
+    {
+        decimal totalBalance = currentBalance + currentOverdraft;
+
+        if (amount > 0 && amount <= totalBalance)
+        {
+            if (amount <= currentBalance)
+            {
+                currentBalance -= amount;
+            }
+            else
+            {
+                decimal overdraftUsed = amount - currentBalance;
+                currentBalance = 0;
+                currentOverdraft -= overdraftUsed;
+            }
+
+            Console.WriteLine($"Средства сняты со счета. Новый баланс: {currentBalance:C}");
+        }
+        else if (amount <= 0)
+        {
+            Console.WriteLine("Сумма для снятия должна быть положительной.");
+        }
+        else
+        {
+            Console.WriteLine("Недостаточно средств на счете.");
+        }
+    }
+
+    public override void PrintAccountStatus()
+    {
+        base.PrintAccountStatus();
+        Console.WriteLine($"Максимальный овердрафт: {maxOverdraft:C}");
+        Console.WriteLine($"Процентная ставка на овердрафт: {interestRate:P}");
+        Console.WriteLine($"Текущий овердрафт: {currentOverdraft:C}");
+    }
+}
+
 class Program
 {
     static void Main()
     {
-        // Пример использования класса Visa
-        Visa visaAccount = new Visa("Иванов Иван", "123456789", 1000.00m);
+        VisaPlus visaPlusAccount = new VisaPlus("Иванов Иван", "123456789", 1000.00m, 500.00m, 0.05m);
 
-        // Вывод начального состояния счета
-        Console.WriteLine("Начальное состояние счета:");
-        visaAccount.PrintAccountStatus();
+        Console.WriteLine("Начальное состояние счета VisaPlus:");
+        visaPlusAccount.PrintAccountStatus();
         Console.WriteLine();
 
-        // Внесение и снятие денег
-        visaAccount.Deposit(500.50m);
-        visaAccount.Withdraw(200.75m);
+        visaPlusAccount.Deposit(500.50m);
+        visaPlusAccount.Withdraw(2000.00m);
+        visaPlusAccount.Withdraw(800.00m);
         Console.WriteLine();
 
-        // Вывод обновленного состояния счета
-        Console.WriteLine("Обновленное состояние счета:");
-        visaAccount.PrintAccountStatus();
+        Console.WriteLine("Обновленное состояние счета VisaPlus:");
+        visaPlusAccount.PrintAccountStatus();
     }
 }
